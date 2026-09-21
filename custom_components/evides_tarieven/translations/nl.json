@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Evides Tarieven toevoegen",
+        "description": "Deze integratie haalt de actuele drinkwatertarieven op van de publieke Evides-tarievenpagina (vastrecht, variabel tarief per m³ en belasting op leidingwater per m³). Er is geen account of API-sleutel nodig."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Evides Tarieven is al geconfigureerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Evides Tarieven instellingen",
+        "data": {
+          "scan_interval_hours": "Controle-interval (uren)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "vastrecht": {
+        "name": "Vastrecht"
+      },
+      "variabel_tarief": {
+        "name": "Variabel tarief per m³"
+      },
+      "belasting_leidingwater": {
+        "name": "Belasting op leidingwater per m³"
+      }
+    }
+  }
+}

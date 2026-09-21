@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Evides Tarieven",
+        "description": "This integration scrapes the public Evides tariff page for the current drinking water tariffs (fixed annual charge, variable rate per m³ and water tax per m³). No account or API key is required."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Evides Tarieven is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Evides Tarieven settings",
+        "data": {
+          "scan_interval_hours": "Check interval (hours)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "vastrecht": {
+        "name": "Fixed annual charge"
+      },
+      "variabel_tarief": {
+        "name": "Variable rate per m³"
+      },
+      "belasting_leidingwater": {
+        "name": "Water tax per m³"
+      }
+    }
+  }
+}
