@@ -2,6 +2,11 @@
 
 Alle noemenswaardige wijzigingen aan deze integratie worden hier bijgehouden. De versienummers volgen [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`) en komen overeen met de `version` in `custom_components/evides_tarieven/manifest.json` en met de GitHub-release/tag.
 
+## [1.1.0] - 2026-09-22
+
+### Toegevoegd
+- Brand-icoon (logo) voor de integratie, zodat deze zichtbaar is met een eigen icoon in Instellingen → Apparaten & Services en in HACS: `custom_components/evides_tarieven/brand/icon.png` + `dark_icon.png` voor dark mode. Gebruikt het inline brand-mechanisme van Home Assistant 2026.3+ (geen aparte PR naar `home-assistant/brands` nodig).
+
 ## [1.0.0] - 2026-09-21
 
 Eerste versie.

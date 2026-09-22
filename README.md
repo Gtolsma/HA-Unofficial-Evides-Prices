@@ -45,12 +45,16 @@ Via **Instellingen → Apparaten & Services → Evides Tarieven → Configureren
 
 De pagina heeft geen bruikbare CSS-classes of id's op de tarieventabel, dus de integratie matcht op de Nederlandse rij-labels in de tabel ("Vastrecht", "Variabel tarief", "Belasting op Leidingwater" / "BoL") in plaats van op vaste HTML-selectors. Zie `custom_components/evides_tarieven/coordinator.py` voor de exacte parsing-logica.
 
+## Logo / brand-icoon
+
+De integratie heeft een eigen icoon (een blauwe waterdruppel — een eigen ontwerp, geen kopie van het officiële Evides-logo) op `custom_components/evides_tarieven/brand/icon.png`, met `dark_icon.png` als variant voor dark mode. Vanaf Home Assistant 2026.3 wordt dit automatisch herkend en getoond bij het apparaat in **Instellingen → Apparaten & Services** en in de HACS-downloadlijst, zonder dat daar een aparte pull request naar `home-assistant/brands` voor nodig is.
+
 ## Versiebeheer
 
 De versie staat op twee plekken en die moeten synchroon lopen:
 
-- `custom_components/evides_tarieven/manifest.json` → veld `"version"` (nu `1.0.0`).
-- Een **GitHub release/tag** met exact dezelfde naam (`1.0.0`, zonder `v`-prefix).
+- `custom_components/evides_tarieven/manifest.json` → veld `"version"` (nu `1.1.0`).
+- Een **GitHub release/tag** met exact dezelfde naam (`1.1.0`, zonder `v`-prefix).
 
 HACS bepaalt namelijk welke versie geïnstalleerd is aan de hand van GitHub-releases, niet aan de hand van de manifest alleen. Dus bij elke wijziging:
 
@@ -60,7 +64,7 @@ HACS bepaalt namelijk welke versie geïnstalleerd is aan de hand van GitHub-rele
 4. Commit, push, en maak op GitHub een nieuwe **release** met tag `X.Y.Z` (Releases → Draft a new release → tag = versienummer, geen `v`).
 5. HACS ziet de nieuwe release vanzelf en biedt hem als update aan.
 
-Dit project begint bij versie **1.0.0**, oftewel "versie 1".
+Huidige versie: **1.1.0** (gestart bij 1.0.0, "versie 1"). Zie `CHANGELOG.md` voor het overzicht per versie.
 
 ## Licentie
 
