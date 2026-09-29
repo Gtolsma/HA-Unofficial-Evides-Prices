@@ -14,6 +14,7 @@
     "step": {
       "init": {
         "title": "Evides Tarieven settings",
+        "description": "Tariffs usually change only once a year (on January 1st), so a daily check is more than enough.",
         "data": {
           "scan_interval_hours": "Check interval (hours)"
         }
@@ -30,7 +31,22 @@
       },
       "belasting_leidingwater": {
         "name": "Water tax per m³"
+      },
+      "totaal_per_m3": {
+        "name": "Total rate per m³"
+      },
+      "vastrecht_per_dag": {
+        "name": "Fixed charge per day"
+      },
+      "laatst_gecontroleerd": {
+        "name": "Last checked"
       }
+    }
+  },
+  "issues": {
+    "pagina_gewijzigd": {
+      "title": "Evides tariff page has changed",
+      "description": "The following tariffs could no longer be found on [the Evides tariff page]({url}): {ontbrekend}.\n\nEvides most likely changed the layout of the page. The affected sensors are unavailable until the integration is updated. Check HACS for a new version, or report it via the issue tracker. This notice disappears automatically once all tariffs are found again."
     }
   }
 }

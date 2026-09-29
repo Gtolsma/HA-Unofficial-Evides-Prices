@@ -1,7 +1,7 @@
 {
   "domain": "evides_tarieven",
   "name": "Evides Tarieven",
-  "codeowners": ["@gileontolsma"],
+  "codeowners": ["@Gtolsma"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/Gtolsma/HA-Unofficial-Evides-Prices",
@@ -9,5 +9,6 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Gtolsma/HA-Unofficial-Evides-Prices/issues",
   "requirements": ["beautifulsoup4>=4.12.0"],
-  "version": "1.1.0"
+  "single_config_entry": true,
+  "version": "1.2.0"
 }
