@@ -22,6 +22,7 @@ Alle noemenswaardige wijzigingen aan deze integratie worden hier bijgehouden. De
 - Modernisering voor recente Home Assistant-versies: `entry.runtime_data`, `DeviceEntryType.SERVICE`, `aiohttp.ClientTimeout`, `config_entry` in de coordinator, nieuwe OptionsFlow-stijl en `single_config_entry` in de manifest. Minimale HA-versie is nu 2024.11.
 
 ### Opgelost
+- `LICENSE`-bestand (MIT) toegevoegd; de README noemde MIT al, maar HACS vereist het bestand.
 - `codeowners` in de manifest verwijst nu naar het juiste GitHub-account (`@Gtolsma`).
 - README noemde entity-ID's (`sensor.vastrecht`, …) die Home Assistant in werkelijkheid niet aanmaakt; de tabel toont nu de echte ID's.
 

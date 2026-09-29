@@ -135,4 +135,4 @@ Huidige versie: **1.2.0** (gestart bij 1.0.0, "versie 1"). Zie `CHANGELOG.md` vo
 
 ## Licentie
 
-MIT — vrij te gebruiken en aan te passen voor eigen gebruik.
+MIT — vrij te gebruiken en aan te passen voor eigen gebruik. Zie [`LICENSE`](LICENSE).
