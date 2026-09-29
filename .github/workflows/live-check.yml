@@ -1,0 +1,33 @@
+name: Live page check
+
+# Scrapes the real Evides page once a week, so a layout change shows up as a
+# failed workflow (and an e-mail from GitHub) before users notice it.
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements_test.txt
+      - name: Parse live page
+        run: |
+          python - <<'PY'
+          import urllib.request
+          from custom_components.evides_tarieven.const import SCRAPED_KEYS, TARIEVEN_URL
+          from custom_components.evides_tarieven.coordinator import parse_tarieven
+
+          req = urllib.request.Request(TARIEVEN_URL, headers={"User-Agent": "Mozilla/5.0"})
+          html = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")
+          result = parse_tarieven(html)
+          print(result)
+          missing = [k for k in SCRAPED_KEYS if k not in result["values"]]
+          assert not missing, f"Ontbrekende tarieven: {missing}"
+          assert result["jaar_bron"] == "pagina", "Tariefjaar niet gevonden"
+          PY

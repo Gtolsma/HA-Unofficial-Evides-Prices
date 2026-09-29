@@ -8,21 +8,30 @@ The page has no stable CSS classes/ids to rely on, so parsing is done by
 matching Dutch label text in the table rows rather than by selector. This is
 inherently fragile against a redesign of the Evides website; if Evides
 changes the wording of the row labels this integration will stop finding
-values and will raise an UpdateFailed, which shows up as the sensors going
-unavailable rather than silently returning wrong numbers.
+values, raise a repair issue and mark the affected sensors unavailable rather
+than silently returning wrong numbers.
+
+Plain network errors are treated differently: the tariffs only change once a
+year, so the last successfully scraped values (also persisted to disk, so they
+survive a restart) are kept instead of making every sensor unavailable while
+evides.nl is briefly unreachable.
 """
 from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
 from typing import Any
 
+import aiohttp
 from bs4 import BeautifulSoup
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ATTR_BRON_URL,
@@ -30,13 +39,19 @@ from .const import (
     ATTR_JAAR_BRON,
     ATTR_LAATST_GECONTROLEERD,
     DOMAIN,
+    EVENT_TARIEF_GEWIJZIGD,
+    ISSUE_PAGINA_GEWIJZIGD,
     KEY_BELASTING_LEIDINGWATER,
     KEY_VARIABEL_TARIEF,
     KEY_VASTRECHT,
+    REQUEST_TIMEOUT_SECONDS,
+    SCRAPED_KEYS,
     TARIEVEN_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+STORAGE_VERSION = 1
 
 # Row-label matchers -> data key. Matched case-insensitively against the
 # text of the *first* cell of each table row. Order matters: more specific
@@ -49,6 +64,13 @@ _LABEL_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         KEY_BELASTING_LEIDINGWATER,
     ),
 ]
+
+# Human-readable labels used in the repair issue for missing rows.
+_KEY_LABELS = {
+    KEY_VASTRECHT: "Vastrecht",
+    KEY_VARIABEL_TARIEF: "Variabel tarief",
+    KEY_BELASTING_LEIDINGWATER: "Belasting op Leidingwater (BoL)",
+}
 
 _PRICE_RE = re.compile(r"€\s*([\d.,]+)")
 _YEAR_PATTERNS = [
@@ -120,36 +142,119 @@ def parse_tarieven(html: str) -> dict[str, Any]:
 
     return {
         "values": results,
-        ATTR_JAAR: jaar if jaar is not None else datetime.now().year,
+        ATTR_JAAR: jaar if jaar is not None else dt_util.now().year,
         ATTR_JAAR_BRON: "pagina" if jaar is not None else "geschat (huidig jaar)",
     }
+
+
+def cache_store(hass: HomeAssistant, entry: ConfigEntry) -> Store[dict[str, Any]]:
+    """Return the store holding the last successfully scraped tariffs."""
+    return Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
 
 
 class EvidesTariefCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator that periodically scrapes the Evides tarieven page."""
 
-    def __init__(self, hass: HomeAssistant, update_interval) -> None:
+    config_entry: ConfigEntry
+
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, update_interval
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
+            config_entry=entry,
             name=DOMAIN,
             update_interval=update_interval,
         )
+        self._store = cache_store(hass, entry)
+        self._cache: dict[str, Any] | None = None
+
+    async def async_load_cache(self) -> None:
+        """Load the last successfully scraped tariffs from disk."""
+        self._cache = await self._store.async_load()
 
     async def _async_update_data(self) -> dict[str, Any]:
+        previous = self.data or self._cache
+
         session = async_get_clientsession(self.hass)
         try:
-            async with session.get(TARIEVEN_URL, timeout=30) as response:
+            async with session.get(
+                TARIEVEN_URL,
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS),
+            ) as response:
                 response.raise_for_status()
                 html = await response.text()
-        except Exception as err:  # noqa: BLE001 - surfaced via UpdateFailed
+        except (aiohttp.ClientError, TimeoutError) as err:
+            if previous is not None:
+                _LOGGER.warning(
+                    "Kon Evides-tarievenpagina niet ophalen (%s); de laatst "
+                    "bekende tarieven van %s blijven in gebruik",
+                    err,
+                    previous.get(ATTR_LAATST_GECONTROLEERD),
+                )
+                return previous
             raise UpdateFailed(f"Kon Evides-tarievenpagina niet ophalen: {err}") from err
 
         try:
             parsed = await self.hass.async_add_executor_job(parse_tarieven, html)
         except ValueError as err:
+            self._async_create_page_issue(list(SCRAPED_KEYS))
             raise UpdateFailed(str(err)) from err
 
+        missing = [key for key in SCRAPED_KEYS if key not in parsed["values"]]
+        if missing:
+            _LOGGER.warning(
+                "Niet alle tarieven gevonden op de Evides-pagina, ontbrekend: %s",
+                ", ".join(missing),
+            )
+            self._async_create_page_issue(missing)
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, ISSUE_PAGINA_GEWIJZIGD)
+
         parsed[ATTR_BRON_URL] = TARIEVEN_URL
-        parsed[ATTR_LAATST_GECONTROLEERD] = datetime.now(timezone.utc).isoformat()
+        parsed[ATTR_LAATST_GECONTROLEERD] = dt_util.utcnow().isoformat()
+
+        if previous is not None:
+            self._async_fire_change_event(previous, parsed)
+
+        self._cache = parsed
+        await self._store.async_save(parsed)
         return parsed
+
+    def _async_create_page_issue(self, missing: list[str]) -> None:
+        ir.async_create_issue(
+            self.hass,
+            DOMAIN,
+            ISSUE_PAGINA_GEWIJZIGD,
+            is_fixable=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=ISSUE_PAGINA_GEWIJZIGD,
+            translation_placeholders={
+                "ontbrekend": ", ".join(_KEY_LABELS[key] for key in missing),
+                "url": TARIEVEN_URL,
+            },
+            learn_more_url="https://github.com/Gtolsma/HA-Unofficial-Evides-Prices/issues",
+        )
+
+    def _async_fire_change_event(
+        self, previous: dict[str, Any], current: dict[str, Any]
+    ) -> None:
+        """Fire an event when one or more tariffs changed since the last check."""
+        oud = previous.get("values", {})
+        nieuw = current["values"]
+        gewijzigd = [
+            key for key in nieuw if key in oud and oud[key] != nieuw[key]
+        ]
+        if not gewijzigd:
+            return
+        _LOGGER.info("Evides-tarieven gewijzigd: %s", ", ".join(gewijzigd))
+        self.hass.bus.async_fire(
+            EVENT_TARIEF_GEWIJZIGD,
+            {
+                "gewijzigd": gewijzigd,
+                "oud": {key: oud[key] for key in gewijzigd},
+                "nieuw": {key: nieuw[key] for key in gewijzigd},
+                ATTR_JAAR: current[ATTR_JAAR],
+            },
+        )

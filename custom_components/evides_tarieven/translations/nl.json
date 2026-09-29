@@ -14,6 +14,7 @@
     "step": {
       "init": {
         "title": "Evides Tarieven instellingen",
+        "description": "De tarieven wijzigen meestal maar één keer per jaar (op 1 januari), dus een dagelijkse controle is ruim voldoende.",
         "data": {
           "scan_interval_hours": "Controle-interval (uren)"
         }
@@ -30,7 +31,22 @@
       },
       "belasting_leidingwater": {
         "name": "Belasting op leidingwater per m³"
+      },
+      "totaal_per_m3": {
+        "name": "Totaal tarief per m³"
+      },
+      "vastrecht_per_dag": {
+        "name": "Vastrecht per dag"
+      },
+      "laatst_gecontroleerd": {
+        "name": "Laatst gecontroleerd"
       }
+    }
+  },
+  "issues": {
+    "pagina_gewijzigd": {
+      "title": "Evides-tarievenpagina is gewijzigd",
+      "description": "De volgende tarieven konden niet meer gevonden worden op [de Evides-tarievenpagina]({url}): {ontbrekend}.\n\nWaarschijnlijk heeft Evides de opmaak van de pagina aangepast. De betreffende sensoren staan op 'niet beschikbaar' totdat de integratie is bijgewerkt. Controleer of er een nieuwe versie in HACS staat, of meld het via de issue tracker. Deze melding verdwijnt vanzelf zodra alle tarieven weer gevonden worden."
     }
   }
 }
